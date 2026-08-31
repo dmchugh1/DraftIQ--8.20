@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>DraftIQ</title>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="DraftIQ">
+<meta name="theme-color" content="#10131A">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
+<style>
+  :root {
+    --bg: #10131A;
+    --panel: #171B24;
+    --panel-2: #1E2330;
+    --line: #2A3040;
+    --text: #E8EAF0;
+    --muted: #8A90A3;
+    --field: #4FAE7C;
+    --field-dim: #2C6B4C;
+    --amber: #E0A840;
+    --red: #D9605C;
+    --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px;
+  }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  header .brand {
+    font-family: var(--mono);
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-size: 17px;
+  }
+  header .brand span { color: var(--field); }
+  header .state {
+    display: flex;
+    gap: 18px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--muted);
+    align-items: center;
+  }
+  header .state b { color: var(--text); }
+  .pill {
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .pill.on { background: rgba(79,174,124,0.18); color: var(--field); border: 1px solid var(--field-dim); }
+  .pill.off { background: rgba(138,144,163,0.12); color: var(--muted); border: 1px solid var(--line); }
+
+  .layout { display: grid; grid-template-columns: 220px 1fr; min-height: calc(100vh - 53px); }
+  nav {
+    border-right: 1px solid var(--line);
+    padding: 16px 10px;
+    background: var(--panel);
+  }
+  nav button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--muted);
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13.5px;
+    margin-bottom: 2px;
+  }
+  nav button:hover { background: var(--panel-2); color: var(--text); }
+  nav button.active { background: var(--panel-2); color: var(--field); font-weight: 600; }
+
+  main { padding: 22px 26px; max-width: 1200px; }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+  .card h2 { font-size: 14px; margin: 0 0 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  tr:hover td { background: var(--panel-2); }
+  .name-cell { font-weight: 600; }
+  .num { font-family: var(--mono); }
+
+  .score-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .score-bar { width: 60px; height: 6px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .score-bar div { height: 100%; background: var(--field); }
+
+  button.action {
+    background: var(--field-dim);
+    color: #E8FBF0;
+    border: 1px solid var(--field);
+    border-radius: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+  button.action:hover { background: var(--field); color: #0B1610; }
+  button.secondary {
+    background: none;
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  button.secondary:hover { border-color: var(--muted); }
+
+  .upload-box {
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+    color: var(--muted);
+  }
+  input[type=file] { color: var(--muted); }
+  input[type=text], input[type=number], select {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+  }
+
+  .reason { color: var(--muted); font-size: 12px; white-space: normal; max-width: 340px; }
+
+  .flag { padding: 2px 8px; border-radius: 5px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .need-tag { display:inline-block; padding: 3px 9px; border-radius: 5px; margin: 2px; font-size: 12px; font-family: var(--mono); }
+  .need-HIGH { background: rgba(217,96,92,0.15); color: var(--red); border: 1px solid rgba(217,96,92,0.4); }
+  .need-OK { background: rgba(79,174,124,0.12); color: var(--field); border: 1px solid var(--field-dim); }
+
+  .empty { color: var(--muted); padding: 20px; text-align: center; }
+  .why-list { margin: 8px 0 0; padding-left: 18px; color: var(--muted); font-size: 13px; }
+  .why-list li { margin-bottom: 4px; }
+
+  .slot-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 10px; border-radius: 6px; margin-bottom: 6px; }
+  .slot-filled { background: rgba(79,174,124,0.08); border: 1px solid var(--field-dim); }
+  .slot-empty { background: rgba(138,144,163,0.06); border: 1px dashed rgba(138,144,163,0.3); }
+  .slot-label { font-family: var(--mono); font-size: 12px; color: var(--muted); min-width: 52px; }
+  .slot-player { font-weight: 600; }
+  .slot-empty .slot-player { color: var(--muted); font-weight: 400; font-style: italic; }
+  .slot-pos { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+  .verdict {
+    font-size: 22px;
+    font-weight: 700;
+    margin: 4px 0 10px;
+  }
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+  textarea {
+    width: 100%;
+    min-height: 70px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">DRAFT<span>IQ</span></div>
+  <div class="state" id="headerState">Loading…</div>
+</header>
+
+<div id="noDataBanner" style="display:none;background:rgba(217,96,92,0.15);border-bottom:1px solid rgba(217,96,92,0.4);color:var(--red);padding:10px 24px;font-size:13px;align-items:center;justify-content:space-between;gap:10px">
+  <span>No player data loaded — likely because the app restarted and reset its memory (common on Render's free tier after ~15 min idle). Any player list you uploaded at runtime doesn't survive a restart; the bundled sample data does, if present.</span>
+  <button class="secondary" style="flex-shrink:0" id="btnGoToSetupFromBanner">Go to Setup</button>
+</div>
+
+<div class="layout">
+  <nav>
+    <button data-view="clock" class="active">Draft Room</button>
+    <button data-view="board">Draft Board</button>
+    <button data-view="recs">Recommendations</button>
+    <button data-view="available">Available Players</button>
+    <button data-view="roster">My Roster</button>
+    <button data-view="league">League</button>
+    <button data-view="setup">Setup</button>
+  </nav>
+
+  <main>
+
+    <!-- DRAFT ROOM -->
+    <div class="view active" id="view-clock">
+      <h1>Draft Room</h1>
+      <div class="sub">Start the draft, see who's on the clock, and log picks as they happen.</div>
+
+      <div class="toolbar">
+        <button class="secondary" id="btnSimToMe">Simulate opponents to my pick</button>
+        <button class="secondary" id="btnRefreshClock">Refresh</button>
+      </div>
+      <div id="roomActionStatus" class="sub" style="margin-bottom:12px"></div>
+
+      <div class="card" id="clockCard">
+        <div class="empty">Load player data in Setup, then tap Start Draft.</div>
+      </div>
+
+      <div class="card">
+        <h2>Alerts</h2>
+        <div id="alertsBox" class="empty">No alerts yet.</div>
+      </div>
+
+      <div class="card">
+        <h2>Targets &amp; Avoids</h2>
+        <div id="flagsBox" class="empty">None set.</div>
+      </div>
+
+      <div class="card" id="sleeperCard">
+        <h2>Live Sync (Sleeper)</h2>
+        <div id="sleeperDisconnected">
+          <div class="sub">Paste your Sleeper draft ID to auto-pull picks as they happen. Find it in your Sleeper draft's URL: sleeper.com/draft/nfl/<b>THIS_PART</b></div>
+          <div class="toolbar" style="margin-top:8px">
+            <input type="text" id="sleeperDraftId" placeholder="Sleeper draft ID" style="flex:1;min-width:160px">
+            <button class="action" id="btnSleeperConnect">Connect</button>
+          </div>
+        </div>
+        <div id="sleeperConnected" style="display:none">
+          <div class="sub">Connected to draft <span id="sleeperIdLabel" class="num"></span></div>
+          <div class="toolbar" style="margin-top:8px">
+            <button class="action" id="btnSleeperSync">Sync Now</button>
+            <label class="sub"><input type="checkbox" id="sleeperAutoPoll"> Auto-sync every 15s</label>
+            <button class="secondary" id="btnSleeperDisconnect">Disconnect</button>
+          </div>
+          <div id="sleeperSyncStatus" class="sub" style="margin-top:6px"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Manual Pick Entry</h2>
+        <div class="sub">If the Sleeper sync is unavailable, log every pick here yourself — yours and every other team's, in the order they happen. Each entry is assigned to whichever team is currently on the clock.</div>
+        <div class="sub" style="margin-top:8px">Currently on the clock: <b id="manualPickCurrentTeam" class="num">–</b></div>
+        <div class="toolbar" style="margin-top:10px;position:relative">
+          <input type="text" id="manualPickInput" placeholder="Type a player name…" style="flex:1;min-width:200px" autocomplete="off">
+          <button class="action" id="btnManualPick">Log Pick</button>
+          <button class="secondary" id="btnUndoPick">Undo Last Pick</button>
+        </div>
+        <div id="manualPickSuggestions" style="display:none;background:var(--panel-2);border:1px solid var(--line);border-radius:6px;margin-top:4px;max-height:180px;overflow-y:auto"></div>
+        <div id="manualPickStatus" class="sub" style="margin-top:6px"></div>
+      </div>
+
+      <div id="compareBar" class="card" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span class="sub" style="margin:0">Compare (check up to 3 players below): <b id="compareBarNames" style="color:var(--text);font-weight:600">none selected</b></span>
+        <button class="action" id="btnCompareGo" disabled>Compare (need 2 more)</button>
+        <button class="secondary" id="btnCompareClear">Clear</button>
+      </div>
+      <div id="compareBarResult"></div>
+
+      <div class="card">
+        <h2>Players (by Rank)</h2>
+        <div class="sub">Manually draft anyone here if the API/sync isn't working — assigns to whoever's currently on the clock.</div>
+        <div class="toolbar" style="margin-top:10px">
+          <input type="text" id="roomPlayerSearch" placeholder="Search player…" style="flex:1;min-width:180px">
+        </div>
+        <div style="overflow-x:auto;margin-top:10px">
+          <table id="roomPlayersTable">
+            <thead><tr><th>Cmp</th><th>Rank</th><th>Player</th><th>Pos</th><th>Team</th><th>ADP</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- DRAFT BOARD -->
+    <div class="view" id="view-board">
+      <h1>Draft Board</h1>
+      <div class="sub">Full snake-draft board, updated live as picks come in.</div>
+      <div class="card">
+        <div style="overflow-x:auto" id="boardWrap">
+          <div class="empty">Load player data and start the draft to see the board.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RECOMMENDATIONS -->
+    <div class="view" id="view-recs">
+      <h1>Draft Recommendations</h1>
+      <div class="sub">Same decision engine as the Draft Room's on-the-clock card, so the top pick here always matches what you see there.</div>
+      <div class="card">
+        <div style="overflow-x:auto">
+          <table id="recsTable">
+            <thead><tr>
+              <th>Decision</th><th>Player</th><th>Pos</th><th>Tier</th>
+              <th>Decision Score</th><th>Player Urg</th><th>Pos Urg</th><th>ADP</th><th>Why</th><th></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- AVAILABLE -->
+    <div class="view" id="view-available">
+      <h1>Available Players</h1>
+      <div class="toolbar">
+        <input type="text" id="playerSearch" placeholder="Search player…">
+      </div>
+      <div class="card">
+        <div style="overflow-x:auto">
+          <table id="availableTable">
+            <thead><tr><th>Rank</th><th>Player</th><th>Pos</th><th>Team</th><th>ADP</th><th></th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROSTER -->
+    <div class="view" id="view-roster">
+      <h1>My Roster</h1>
+      <div class="grid2">
+        <div class="card">
+          <h2>Starting Lineup</h2>
+          <div id="rosterSlots" class="empty">Load player data to see your lineup.</div>
+        </div>
+        <div class="card">
+          <h2>Bench</h2>
+          <div id="rosterBench" class="empty">Empty</div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Position Needs</h2>
+        <div id="needsList" class="empty">—</div>
+      </div>
+    </div>
+
+    <!-- LEAGUE -->
+    <div class="view" id="view-league">
+      <h1>League</h1>
+      <div class="sub">All 12 rosters.</div>
+      <div class="card" id="leagueBox"></div>
+    </div>
+
+    <!-- TOOLS -->
+    <!-- SETUP -->
+    <div class="view" id="view-setup">
+      <h1>Setup</h1>
+      <div class="card">
+        <h2>Player Data</h2>
+        <div class="upload-box">
+          <p>Upload a players.csv (columns: player/name, pos/position, team, rank, adp)</p>
+          <input type="file" id="fileInput" accept=".csv">
+          <div style="margin-top:10px"><button class="action" id="btnUpload">Upload &amp; Load</button></div>
+          <div id="uploadStatus" class="sub"></div>
+        </div>
+        <div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">
+          <div class="sub">Or pull a player pool straight from Sleeper. Note: Sleeper's public API doesn't expose real expert rankings/ADP — this uses Sleeper's internal relevance ranking instead, which is a rough proxy, not true ADP.</div>
+          <div style="margin-top:8px"><button class="action" id="btnSleeperImportPlayers">Import Players from Sleeper</button></div>
+          <div id="sleeperImportPlayersStatus" class="sub"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>League Settings</h2>
+        <div class="sub">Changing <b>Teams</b> or <b>Rounds</b> resets the current draft (league structure changes). Everything else here updates in place and keeps your draft intact.</div>
+        <div class="toolbar" style="margin-top:10px">
+          <label>Teams <input type="number" id="setNumTeams" style="width:60px"></label>
+          <label>Rounds <input type="number" id="setRounds" style="width:60px"></label>
+          <label>My Draft Slot <input type="number" id="setMyTeam" style="width:60px"></label>
+        </div>
+
+        <div style="margin-top:16px">
+          <div class="sub" style="margin-bottom:6px">Scoring (label only — your player rankings should already reflect your real scoring format; this doesn't change the math, it's just displayed in the header for your own reference).</div>
+          <input type="text" id="setScoring" style="width:100%;max-width:320px" placeholder="e.g. 0.5 PPR, Full PPR, Standard, TE Premium">
+        </div>
+
+        <div style="margin-top:16px">
+          <div class="sub" style="margin-bottom:6px">Recommendation Aggressiveness — how eagerly "Must Draft" / "Draft Soon" flags trigger. Doesn't change base player scores, only how urgently the app pushes you to act on risk/scarcity signals.</div>
+          <div class="toolbar">
+            <span class="sub">Conservative</span>
+            <input type="range" min="1" max="10" id="setAggressiveness" style="flex:1;max-width:220px">
+            <span class="sub">Aggressive</span>
+            <span class="num" id="aggressivenessLabel" style="min-width:20px">5</span>
+          </div>
+        </div>
+
+        <div style="margin-top:16px">
+          <div class="sub" style="margin-bottom:6px">Starting Lineup — position and how many starters at each. Use FLEX for a flex slot.</div>
+          <div id="startersTable"></div>
+          <div class="toolbar" style="margin-top:8px">
+            <input type="text" id="newStarterPos" placeholder="Position (e.g. WR)" style="width:120px">
+            <input type="number" id="newStarterCount" placeholder="Count" style="width:70px" min="1" value="1">
+            <button class="secondary" id="btnAddStarter">Add</button>
+          </div>
+        </div>
+
+        <div class="toolbar" style="margin-top:18px">
+          <button class="action" id="btnSaveSettings">Save League Settings</button>
+        </div>
+        <div id="saveSettingsStatus" class="sub"></div>
+
+        <div style="margin-top:16px;border-top:1px solid var(--line);padding-top:14px">
+          <div class="sub">Or import team count, starting lineup, scoring format, and your draft slot straight from a Sleeper draft.</div>
+          <div class="toolbar" style="margin-top:8px">
+            <input type="text" id="sleeperSettingsDraftId" placeholder="Sleeper draft ID">
+            <input type="text" id="sleeperUsername" placeholder="Your Sleeper username (optional, for draft slot)">
+            <button class="action" id="btnSleeperImportSettings">Import League Settings</button>
+          </div>
+          <div id="sleeperImportSettingsStatus" class="sub"></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Draft Control</h2>
+        <button class="secondary" id="btnReset">Reset Draft</button>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const $ = sel => document.querySelector(sel);
+const $$ = sel => document.querySelectorAll(sel);
+
+async function api(path, opts) {
+  const res = await fetch(path, opts);
+  return res.json();
+}
+async function apiGet(path) { return api(path); }
+async function apiPost(path, body) {
+  return api(path, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(body || {})
+  });
+}
+
+// ---------- Navigation ----------
+$$("nav button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    $$("nav button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    $$(".view").forEach(v => v.classList.remove("active"));
+    $("#view-" + btn.dataset.view).classList.add("active");
+    refreshView(btn.dataset.view);
+  });
+});
+
+function flagColor(label) {
+  if (!label) return {bg:"rgba(138,144,163,0.12)", fg:"var(--muted)"};
+  if (label.includes("Must Draft") || label.includes("DRAFT THIS")) return {bg:"rgba(217,96,92,0.18)", fg:"var(--red)"};
+  if (label.includes("Best")) return {bg:"rgba(79,174,124,0.18)", fg:"var(--field)"};
+  if (label.includes("Great") || label.includes("Strong")) return {bg:"rgba(224,168,64,0.18)", fg:"var(--amber)"};
+  if (label.includes("Soon")) return {bg:"rgba(224,168,64,0.18)", fg:"var(--amber)"};
+  return {bg:"rgba(138,144,163,0.12)", fg:"var(--muted)"};
+}
+
+// ---------- Header state ----------
+async function refreshHeader() {
+  const s = await apiGet("/api/state");
+  const banner = $("#noDataBanner");
+  if (s.ok === false) {
+    $("#headerState").innerHTML = `<span class="pill off">No data loaded</span>`;
+    banner.style.display = "flex";
+    return;
+  }
+  banner.style.display = "none";
+  if (s.draft_complete) {
+    $("#headerState").innerHTML = `<span class="pill on">🏁 DRAFT COMPLETE</span>`;
+  } else {
+    $("#headerState").innerHTML = `
+      <span>Pick <b>${s.pick}</b></span>
+      <span>Round <b>${s.round}</b> of ${s.total_rounds}</span>
+      <span>Team <b>${s.current_team}</b> on the clock</span>
+      <span class="pill ${s.on_the_clock ? 'on' : 'off'}">${s.on_the_clock ? "YOU'RE UP" : "waiting"}</span>
+    `;
+  }
+  return s;
+}
+
+$("#btnGoToSetupFromBanner").addEventListener("click", () => {
+  $$("nav button").forEach(b => b.classList.remove("active"));
+  document.querySelector('nav button[data-view="setup"]').classList.add("active");
+  $$(".view").forEach(v => v.classList.remove("active"));
+  $("#view-setup").classList.add("active");
+  loadSettingsIntoForm();
+});
+
+// ---------- On The Clock ----------
+async function refreshClock() {
+  const s = await refreshHeader();
+  if (!s || s.ok === false) return;
+
+  refreshRoomPlayers();
+
+  const teamLabel = $("#manualPickCurrentTeam");
+  if (teamLabel) teamLabel.textContent = `Team ${s.current_team}` + (s.on_the_clock ? " (you)" : "");
+
+  if (s.draft_complete) {
+    $("#clockCard").innerHTML = `
+      <div style="text-align:center;padding:12px 0">
+        <div class="verdict" style="font-size:26px">🏁 Draft Complete!</div>
+        <div class="sub">All ${s.total_rounds} rounds are done. Check My Roster or the Draft Board for the final results.</div>
+      </div>
+    `;
+  } else if (!s.on_the_clock) {
+    $("#clockCard").innerHTML = `<div class="empty">Team ${s.current_team} is on the clock. Simulate opponents or draft for them below.</div>`;
+  } else {
+    const d = await apiGet("/api/on_clock");
+    if (d.error) {
+      $("#clockCard").innerHTML = `<div class="empty">${d.error}</div>`;
+    } else {
+      const best = d.best;
+      $("#clockCard").innerHTML = `
+        <div class="sub">Round ${d.round} · Pick ${d.pick}</div>
+        <div class="verdict">🏆 ${best.Player} <span style="color:var(--muted);font-weight:400;font-size:15px">(${best.Position}, Tier ${best.Tier ?? "–"})</span></div>
+        <div class="sub">Decision Score: <b class="num">${best["Decision Score"]}</b></div>
+        <ul class="why-list">${d.why.map(w => `<li>${w}</li>`).join("")}</ul>
+        <div class="sub" style="margin-top:10px"><b>Strategy:</b> ${d.strategy}</div>
+        <div class="sub"><b>Opportunity cost:</b> ${d.opportunity_cost}</div>
+        <div style="margin-top:12px">
+          <button class="action" onclick="draftPlayer('${best.Player.replace(/'/g, "\\'")}')">Draft ${best.Player}</button>
+        </div>
+        <div style="margin-top:14px">
+          <div class="sub" style="margin-bottom:6px">Alternatives:</div>
+          ${d.alternatives.map(a => `<div class="sub">${a.Player} (${a.Position}) — ${a["Decision Score"]} <button class="secondary" style="padding:2px 8px;margin-left:6px" onclick="draftPlayer('${a.Player.replace(/'/g, "\\'")}')">Draft</button></div>`).join("")}
+        </div>
+      `;
+    }
+  }
+
+  const a = await apiGet("/api/alerts");
+  const targetLines = (a.target_alerts || []).map(t =>
+    t.at_risk
+      ? `<div class="sub" style="color:#e05252;font-weight:600">\u{1F3AF} ${t.name} (${t.position}) - only ${t.probability_available}% likely to survive to your next pick - draft now or risk losing them</div>`
+      : `<div class="sub">\u{1F3AF} ${t.name} (${t.position}) - ${t.probability_available}% likely to still be available at your next pick</div>`
+  );
+  const all = [...(a.draft_alerts||[]), ...(a.position_runs||[])];
+  const allLines = [...targetLines, ...all.map(x => `<div class="sub">${x}</div>`)];
+  $("#alertsBox").innerHTML = allLines.length
+    ? allLines.join("")
+    : `<div class="empty">No alerts.</div>`;
+
+  await refreshFlags();
+}
+
+async function draftPlayer(name) {
+  const r = await apiPost("/api/pick", {player: name});
+  const status = $("#roomActionStatus");
+  if (!r.ok) { status.textContent = `⚠️ ${r.message}`; return; }
+  status.textContent = "";
+  await refreshClock();
+  const activeBtn = document.querySelector("nav button.active");
+  const activeView = activeBtn ? activeBtn.dataset.view : null;
+  if (activeView && activeView !== "clock") refreshView(activeView);
+}
+window.draftPlayer = draftPlayer;
+
+async function targetPlayer(name, action = "add") {
+  await apiPost("/api/target", {player: name, action});
+  const activeBtn = document.querySelector("nav button.active");
+  const activeView = activeBtn ? activeBtn.dataset.view : null;
+  if (activeView) refreshView(activeView);
+  await refreshClock();
+}
+window.targetPlayer = targetPlayer;
+
+async function avoidPlayer(name, action = "add") {
+  await apiPost("/api/avoid", {player: name, action});
+  const activeBtn = document.querySelector("nav button.active");
+  const activeView = activeBtn ? activeBtn.dataset.view : null;
+  if (activeView) refreshView(activeView);
+  await refreshClock();
+}
+window.avoidPlayer = avoidPlayer;
+
+async function refreshFlags() {
+  const f = await apiGet("/api/flags");
+  const targets = f.targets || [];
+  const avoids = f.avoids || [];
+  if (targets.length === 0 && avoids.length === 0) {
+    $("#flagsBox").innerHTML = `<div class="empty">None set.</div>`;
+    return;
+  }
+  const row = (name, kind) => `
+    <div class="sub" style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <span>${kind === "target" ? "\u{1F3AF}" : "\u{1F6AB}"} ${name}</span>
+      <button class="secondary" style="padding:2px 8px" onclick="${kind}Player('${name.replace(/'/g, "\\'")}', 'remove')">Remove</button>
+    </div>`;
+  $("#flagsBox").innerHTML =
+    targets.map(n => row(n, "target")).join("") +
+    avoids.map(n => row(n, "avoid")).join("");
+}
+
+$("#btnSimToMe").addEventListener("click", async () => {
+  await apiPost("/api/simulate_to_me", {});
+  await refreshClock();
+});
+$("#btnRefreshClock").addEventListener("click", refreshClock);
+
+async function draftPlayerAny(name) {
+  const r = await apiPost("/api/draft_any", {player: name});
+  const status = $("#roomActionStatus");
+  if (!r.ok) { status.textContent = `⚠️ ${r.message}`; return; }
+  status.textContent = "";
+  await refreshClock();
+  await refreshRoomPlayers();
+}
+window.draftPlayerAny = draftPlayerAny;
+
+// ---------- Draft Room: ranked player list ----------
+let roomPlayersDebounce = null;
+
+async function refreshRoomPlayers() {
+  const q = $("#roomPlayerSearch").value.trim().toLowerCase();
+  const d = await apiGet("/api/available?count=500");
+  let players = d.players || [];
+  if (q) players = players.filter(p => p.name.toLowerCase().includes(q));
+  players = players.slice(0, 100);
+
+  const tbody = $("#roomPlayersTable tbody");
+  tbody.innerHTML = "";
+  if (players.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty">No players.</td></tr>`;
+    return;
+  }
+  players.forEach(p => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="checkbox" class="compare-checkbox" data-player="${p.name.replace(/"/g, "&quot;")}" onchange="toggleCompare('${p.name.replace(/'/g, "\\'")}', this.checked)"></td>
+      <td class="num">${p.rank}</td>
+      <td class="name-cell">${p.name}</td>
+      <td>${p.position}</td>
+      <td>${p.team ?? "–"}</td>
+      <td class="num">${p.adp ?? "–"}</td>
+      <td><button class="action" onclick="draftPlayerAny('${p.name.replace(/'/g, "\\'")}')">Draft</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+  syncCompareCheckboxes();
+}
+$("#roomPlayerSearch").addEventListener("input", () => {
+  clearTimeout(roomPlayersDebounce);
+  roomPlayersDebounce = setTimeout(refreshRoomPlayers, 150);
+});
+
+// ---------- Draft Board ----------
+async function refreshBoard() {
+  const wrap = $("#boardWrap");
+  const d = await apiGet("/api/board");
+  if (!d.grid) {
+    wrap.innerHTML = `<div class="empty">Load player data and start the draft to see the board.</div>`;
+    return;
+  }
+
+  let html = `<table style="min-width:${d.num_teams * 90}px"><thead><tr><th>Rd</th>`;
+  for (let t = 1; t <= d.num_teams; t++) {
+    const mine = t === d.my_team;
+    html += `<th style="${mine ? 'color:var(--field)' : ''}">Team ${t}${mine ? " (you)" : ""}</th>`;
+  }
+  html += `</tr></thead><tbody>`;
+
+  d.grid.forEach((row, i) => {
+    html += `<tr><td class="num">${i + 1}</td>`;
+    row.forEach(cell => {
+      if (!cell) { html += `<td></td>`; return; }
+      const bg = cell.is_current ? "background:rgba(224,168,64,0.18);" : (cell.is_my_team ? "background:rgba(79,174,124,0.08);" : "");
+      const content = cell.player
+        ? `<div style="font-weight:600">${cell.player}</div><div class="sub" style="font-size:11px">${cell.position ?? ""} · #${cell.pick}</div>`
+        : (cell.is_current ? `<div class="sub" style="color:var(--amber)">on the clock</div>` : `<div class="sub">#${cell.pick}</div>`);
+      html += `<td style="${bg}vertical-align:top;min-width:100px">${content}</td>`;
+    });
+    html += `</tr>`;
+  });
+  html += `</tbody></table>`;
+  wrap.innerHTML = html;
+}
+
+// ---------- Sleeper live sync ----------
+let sleeperPollTimer = null;
+
+async function refreshSleeperPanel() {
+  const s = await apiGet("/api/sleeper/status");
+  if (s.connected) {
+    $("#sleeperDisconnected").style.display = "none";
+    $("#sleeperConnected").style.display = "block";
+    $("#sleeperIdLabel").textContent = s.draft_id;
+  } else {
+    $("#sleeperDisconnected").style.display = "block";
+    $("#sleeperConnected").style.display = "none";
+  }
+}
+
+$("#btnSleeperConnect").addEventListener("click", async () => {
+  const draftId = $("#sleeperDraftId").value.trim();
+  if (!draftId) return;
+  const r = await apiPost("/api/sleeper/connect", {draft_id: draftId});
+  if (!r.ok) { alert(r.message); return; }
+  await refreshSleeperPanel();
+  await syncSleeper();
+});
+
+$("#btnSleeperDisconnect").addEventListener("click", async () => {
+  await apiPost("/api/sleeper/disconnect", {});
+  $("#sleeperAutoPoll").checked = false;
+  stopSleeperPolling();
+  await refreshSleeperPanel();
+});
+
+$("#btnSleeperSync").addEventListener("click", syncSleeper);
+
+async function syncSleeper() {
+  const r = await apiPost("/api/sleeper/sync", {});
+  const el = $("#sleeperSyncStatus");
+  if (!r.ok) { el.textContent = r.message; return; }
+  const newCount = r.applied.length;
+  el.textContent = newCount
+    ? `Synced ${newCount} new pick(s): ${r.applied.join(", ")}`
+    : `Up to date (${r.total_sleeper_picks} picks so far).`;
+  if (r.unmatched.length) {
+    el.textContent += ` — couldn't match: ${r.unmatched.join(", ")}`;
+  }
+  await refreshClock();
+  // New picks change the available pool, tiers, roster, and every score
+  // that depends on them - refresh whichever tab is actually on screen
+  // (Recommendations, Board, Available, Roster, League) too, not just the
+  // clock card. Without this, a sync could apply correctly in the
+  // backend while the visible table sat stale until the user clicked
+  // away and back.
+  if (newCount > 0) {
+    const activeBtn = document.querySelector("nav button.active");
+    const activeView = activeBtn ? activeBtn.dataset.view : null;
+    if (activeView && activeView !== "clock") refreshView(activeView);
+  }
+}
+
+$("#sleeperAutoPoll").addEventListener("change", (e) => {
+  if (e.target.checked) startSleeperPolling();
+  else stopSleeperPolling();
+});
+function startSleeperPolling() {
+  stopSleeperPolling();
+  sleeperPollTimer = setInterval(syncSleeper, 15000);
+}
+function stopSleeperPolling() {
+  if (sleeperPollTimer) clearInterval(sleeperPollTimer);
+  sleeperPollTimer = null;
+}
+
+// ---------- Manual pick entry ----------
+let manualPickSelectedName = null;
+let manualPickDebounce = null;
+
+$("#manualPickInput").addEventListener("input", (e) => {
+  manualPickSelectedName = null;
+  const q = e.target.value.trim();
+  clearTimeout(manualPickDebounce);
+  if (q.length < 2) {
+    $("#manualPickSuggestions").style.display = "none";
+    return;
+  }
+  manualPickDebounce = setTimeout(async () => {
+    const d = await apiGet("/api/available?count=500");
+    const matches = (d.players || [])
+      .filter(p => p.name.toLowerCase().includes(q.toLowerCase()))
+      .slice(0, 8);
+    const box = $("#manualPickSuggestions");
+    if (matches.length === 0) {
+      box.style.display = "none";
+      return;
+    }
+    box.innerHTML = matches.map(p =>
+      `<div class="sub" style="padding:8px 10px;cursor:pointer;color:var(--text)" data-name="${p.name.replace(/"/g,'&quot;')}">${p.name} <span style="color:var(--muted)">(${p.position}${p.team ? ", " + p.team : ""})</span></div>`
+    ).join("");
+    box.style.display = "block";
+    box.querySelectorAll("[data-name]").forEach(row => {
+      row.addEventListener("click", () => {
+        manualPickSelectedName = row.dataset.name;
+        $("#manualPickInput").value = row.dataset.name;
+        box.style.display = "none";
+      });
+    });
+  }, 200);
+});
+
+$("#btnManualPick").addEventListener("click", async () => {
+  const typed = $("#manualPickInput").value.trim();
+  const name = manualPickSelectedName || typed;
+  const status = $("#manualPickStatus");
+  if (!name) { status.textContent = "Type or select a player first."; return; }
+
+  const r = await apiPost("/api/draft_any", {player: name});
+  if (!r.ok) { status.textContent = r.message; return; }
+  status.textContent = `Pick #${r.pick}: ${r.team_name} drafted ${r.player}`;
+  $("#manualPickInput").value = "";
+  manualPickSelectedName = null;
+  $("#manualPickSuggestions").style.display = "none";
+  await refreshClock();
+});
+
+$("#btnUndoPick").addEventListener("click", async () => {
+  const r = await apiPost("/api/undo", {});
+  const status = $("#manualPickStatus");
+  status.textContent = r.ok ? `Undid pick #${r.pick}: ${r.undone} (${r.team})` : r.message;
+  await refreshClock();
+});
+
+// ---------- Recommendations ----------
+async function refreshRecs() {
+  const d = await apiGet("/api/decision?count=15");
+  const tbody = $("#recsTable tbody");
+  tbody.innerHTML = "";
+  if (!d.decisions || d.decisions.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="10" class="empty">No data loaded.</td></tr>`;
+    return;
+  }
+  d.decisions.forEach(row => {
+    const c = flagColor(row.Decision);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><span class="flag" style="background:${c.bg};color:${c.fg}">${row.Decision}</span></td>
+      <td class="name-cell">${row.Player}</td>
+      <td>${row.Position}</td>
+      <td class="num">${row.Tier ?? "–"}</td>
+      <td class="num">${row["Decision Score"]}</td>
+      <td class="num">${row["Player Urgency"]}</td>
+      <td class="num">${row["Position Urgency"]}</td>
+      <td class="num">${row.ADP ?? "–"}</td>
+      <td class="reason">${row.Reason}</td>
+      <td>
+        <button class="action" onclick="draftPlayer('${row.Player.replace(/'/g, "\\'")}')">Draft</button>
+        <button class="secondary" style="padding:2px 8px;margin-left:4px" title="Target this player" onclick="targetPlayer('${row.Player.replace(/'/g, "\\'")}')">\u{1F3AF}</button>
+        <button class="secondary" style="padding:2px 8px;margin-left:4px" title="Avoid this player" onclick="avoidPlayer('${row.Player.replace(/'/g, "\\'")}')">\u{1F6AB}</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ---------- Available ----------
+async function refreshAvailable() {
+  const d = await apiGet("/api/available?count=50");
+  renderAvailable(d.players || []);
+}
+function renderAvailable(players) {
+  const tbody = $("#availableTable tbody");
+  tbody.innerHTML = "";
+  if (players.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty">No players.</td></tr>`;
+    return;
+  }
+  players.forEach(p => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="num">${p.rank}</td>
+      <td class="name-cell">${p.name}</td>
+      <td>${p.position}</td>
+      <td>${p.team ?? "–"}</td>
+      <td class="num">${p.adp ?? "–"}</td>
+      <td>
+        <button class="action" onclick="draftPlayer('${p.name.replace(/'/g, "\\'")}')">Draft</button>
+        <button class="secondary" style="padding:2px 8px;margin-left:4px" title="Target this player" onclick="targetPlayer('${p.name.replace(/'/g, "\\'")}')">\u{1F3AF}</button>
+        <button class="secondary" style="padding:2px 8px;margin-left:4px" title="Avoid this player" onclick="avoidPlayer('${p.name.replace(/'/g, "\\'")}')">\u{1F6AB}</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+$("#playerSearch").addEventListener("input", async (e) => {
+  const q = e.target.value.trim().toLowerCase();
+  const d = await apiGet("/api/available?count=500");
+  const filtered = (d.players || []).filter(p => p.name.toLowerCase().includes(q));
+  renderAvailable(filtered.slice(0, 50));
+});
+
+// ---------- Roster ----------
+async function refreshRoster() {
+  const d = await apiGet("/api/roster");
+  if (d.ok === false) {
+    $("#rosterSlots").innerHTML = `<div class="empty">${d.message}</div>`;
+    $("#rosterBench").innerHTML = `<div class="empty">${d.message}</div>`;
+    return;
+  }
+  const slots = (d.slots && d.slots.starters) || [];
+  $("#rosterSlots").innerHTML = slots.length
+    ? slots.map(s => `
+        <div class="slot-row ${s.player ? "slot-filled" : "slot-empty"}">
+          <span class="slot-label">${s.slot}</span>
+          <span class="slot-player">${s.player || "Open"}</span>
+          <span class="slot-pos">${s.position || ""}</span>
+        </div>
+      `).join("")
+    : `<div class="empty">No starting lineup configured.</div>`;
+
+  const bench = (d.slots && d.slots.bench) || [];
+  $("#rosterBench").innerHTML = bench.length
+    ? bench.map(b => `
+        <div class="slot-row slot-filled">
+          <span class="slot-player">${b.player}</span>
+          <span class="slot-pos">${b.position || ""}</span>
+        </div>
+      `).join("")
+    : `<div class="empty">Empty</div>`;
+
+  $("#needsList").innerHTML = Object.entries(d.needs).map(([pos, need]) =>
+    `<span class="need-tag need-${need}">${pos}: ${need}</span>`
+  ).join("");
+}
+
+// ---------- League ----------
+async function refreshLeague() {
+  const d = await apiGet("/api/league");
+  if (!d.league) { $("#leagueBox").innerHTML = `<div class="empty">No data loaded.</div>`; return; }
+  $("#leagueBox").innerHTML = `
+    <div class="grid2">
+      ${d.league.map(team => `
+        <div>
+          <b>${team.team}</b>
+          <div class="sub">${team.roster.length ? team.roster.join(", ") : "Empty"}</div>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
+// ---------- Compare bar (embedded checkboxes, not a separate tab) ----------
+let compareSelection = [];
+
+function syncCompareCheckboxes() {
+  document.querySelectorAll(".compare-checkbox").forEach(cb => {
+    const name = cb.dataset.player;
+    cb.checked = compareSelection.includes(name);
+    cb.disabled = !cb.checked && compareSelection.length >= 3;
+  });
+  const btn = $("#btnCompareGo");
+  btn.disabled = compareSelection.length < 2;
+  btn.textContent = compareSelection.length >= 2
+    ? `Compare (${compareSelection.length})`
+    : `Compare (need ${2 - compareSelection.length} more)`;
+  $("#compareBarNames").textContent = compareSelection.length ? compareSelection.join(", ") : "none selected";
+}
+
+function toggleCompare(name, checked) {
+  if (checked) {
+    if (compareSelection.length >= 3) return;
+    compareSelection.push(name);
+  } else {
+    compareSelection = compareSelection.filter(n => n !== name);
+  }
+  syncCompareCheckboxes();
+}
+window.toggleCompare = toggleCompare;
+
+$("#btnCompareGo").addEventListener("click", async () => {
+  const d = await apiPost("/api/compare", {players: compareSelection});
+  renderComparisonTable(d.comparison, "compareBarResult", "Strategy Score");
+});
+$("#btnCompareClear").addEventListener("click", () => {
+  compareSelection = [];
+  syncCompareCheckboxes();
+  $("#compareBarResult").innerHTML = "";
+});
+
+function renderComparisonTable(rows, targetId, scoreKey) {
+  const el = $("#" + targetId);
+  if (!rows || rows.length === 0) { el.innerHTML = `<div class="empty">No results — check player names.</div>`; return; }
+  el.innerHTML = `
+    <table style="margin-top:10px"><thead><tr>
+      <th>Player</th><th>Pos</th><th>Tier</th><th>${scoreKey}</th><th>Next Pick %</th><th>Why</th>
+    </tr></thead><tbody>
+      ${rows.map(r => `<tr>
+        <td class="name-cell">${r.Player}</td><td>${r.Position}</td><td class="num">${r.Tier ?? "–"}</td>
+        <td class="num">${r[scoreKey]}</td><td class="num">${r["Next Pick %"]}</td><td class="reason">${r.Reason}</td>
+      </tr>`).join("")}
+    </tbody></table>
+  `;
+}
+
+// ---------- Setup ----------
+$("#btnUpload").addEventListener("click", async () => {
+  const file = $("#fileInput").files[0];
+  if (!file) { $("#uploadStatus").textContent = "Choose a file first."; return; }
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await fetch("/api/upload", {method: "POST", body: fd});
+  const d = await res.json();
+  $("#uploadStatus").textContent = d.ok ? `Loaded ${d.players_loaded} players.` : d.message;
+  refreshHeader();
+});
+
+$("#btnSleeperImportPlayers").addEventListener("click", async () => {
+  const el = $("#sleeperImportPlayersStatus");
+  el.textContent = "Importing… this can take a few seconds.";
+  const d = await apiPost("/api/sleeper/import_players", {});
+  el.textContent = d.ok ? `Loaded ${d.players_loaded} players. ${d.note}` : d.message;
+  refreshHeader();
+});
+
+$("#btnSleeperImportSettings").addEventListener("click", async () => {
+  const draftId = $("#sleeperSettingsDraftId").value.trim();
+  const username = $("#sleeperUsername").value.trim();
+  if (!draftId) { $("#sleeperImportSettingsStatus").textContent = "Enter a Sleeper draft ID first."; return; }
+  const el = $("#sleeperImportSettingsStatus");
+  el.textContent = "Importing…";
+  const d = await apiPost("/api/sleeper/import_settings", {draft_id: draftId, username: username || null});
+  if (!d.ok) { el.textContent = d.message; return; }
+  el.textContent = `Applied: ${d.applied.join(", ")}`;
+  await loadSettingsIntoForm();
+  refreshHeader();
+});
+
+$("#btnSaveSettings").addEventListener("click", async () => {
+  const starters = {};
+  $$("#startersTable [data-starter-row]").forEach(row => {
+    const pos = row.querySelector(".starter-pos").value.trim().toUpperCase();
+    const count = parseInt(row.querySelector(".starter-count").value);
+    if (pos && count > 0) starters[pos] = count;
+  });
+
+  const status = $("#saveSettingsStatus");
+  status.textContent = "Saving…";
+
+  const r = await apiPost("/api/settings", {
+    num_teams: parseInt($("#setNumTeams").value),
+    rounds: parseInt($("#setRounds").value),
+    my_team: parseInt($("#setMyTeam").value),
+    scoring: $("#setScoring").value.trim(),
+    aggressiveness: parseInt($("#setAggressiveness").value),
+    starters: starters,
+  });
+
+  status.textContent = "Saved.";
+  await refreshHeader();
+});
+
+$("#setAggressiveness").addEventListener("input", (e) => {
+  $("#aggressivenessLabel").textContent = e.target.value;
+});
+
+$("#btnAddStarter").addEventListener("click", () => {
+  const pos = $("#newStarterPos").value.trim().toUpperCase();
+  const count = parseInt($("#newStarterCount").value) || 1;
+  if (!pos) return;
+  addStarterRow(pos, count);
+  $("#newStarterPos").value = "";
+  $("#newStarterCount").value = "1";
+});
+
+function addStarterRow(pos, count) {
+  const container = $("#startersTable");
+  const row = document.createElement("div");
+  row.setAttribute("data-starter-row", "1");
+  row.style.cssText = "display:flex;gap:8px;align-items:center;margin-bottom:6px";
+  row.innerHTML = `
+    <input type="text" class="starter-pos" value="${pos}" style="width:100px" readonly>
+    <input type="number" class="starter-count" value="${count}" style="width:70px" min="1">
+    <button class="secondary" style="padding:4px 10px" onclick="this.parentElement.remove()">Remove</button>
+  `;
+  container.appendChild(row);
+}
+
+function renderStartersTable(starters) {
+  const container = $("#startersTable");
+  container.innerHTML = "";
+  Object.entries(starters || {}).forEach(([pos, count]) => addStarterRow(pos, count));
+}
+
+$("#btnReset").addEventListener("click", async () => {
+  await apiPost("/api/reset", {});
+  refreshHeader();
+});
+
+async function loadSettingsIntoForm() {
+  const s = await apiGet("/api/settings");
+  $("#setNumTeams").value = s.num_teams;
+  $("#setMyTeam").value = s.my_team;
+  $("#setRounds").value = s.rounds;
+  $("#setScoring").value = s.scoring || "";
+  $("#setAggressiveness").value = s.aggressiveness || 5;
+  $("#aggressivenessLabel").textContent = s.aggressiveness || 5;
+  renderStartersTable(s.starters);
+}
+
+// ---------- View router ----------
+function refreshView(name) {
+  if (name === "clock") refreshClock();
+  else if (name === "board") refreshBoard();
+  else if (name === "recs") refreshRecs();
+  else if (name === "available") refreshAvailable();
+  else if (name === "roster") refreshRoster();
+  else if (name === "league") refreshLeague();
+  else if (name === "setup") loadSettingsIntoForm();
+}
+
+// Initial load
+refreshHeader();
+refreshClock();
+refreshSleeperPanel();
+</script>
+
+</body>
+</html>
